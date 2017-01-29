@@ -30,9 +30,11 @@ apply {
 
 dependencies {
   compile "com.nablarch.framework:nablarch-core:${nablarchCoreVersion}"
+  compile 'org.jboss.logging:jboss-logging:3.3.0.Final'
 
   testCompile 'org.jmockit:jmockit:1.30'
   testCompile 'junit:junit:4.12'
+  testCompile 'org.slf4j:slf4j-simple:1.7.22'
 }
 
 
