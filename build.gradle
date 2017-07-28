@@ -39,7 +39,6 @@ dependencies {
 
 
 test {
-  ignoreFailures = true
 }
 
 wrapper {
