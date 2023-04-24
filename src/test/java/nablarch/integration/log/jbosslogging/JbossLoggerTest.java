@@ -1,23 +1,19 @@
 package nablarch.integration.log.jbosslogging;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.assertThat;
+import nablarch.core.log.Logger;
+import org.junit.Test;
+import org.mockito.MockedStatic;
 
 import java.math.BigDecimal;
-import java.util.concurrent.ExecutionException;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.LogManager;
 
-import nablarch.core.log.Logger;
-import nablarch.core.log.LoggerManager;
-import nablarch.core.repository.SystemRepository;
-
-import org.junit.Test;
-
-import mockit.Expectations;
-import mockit.Mocked;
-import mockit.Verifications;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * {@link JbossLogger}のテスト。
@@ -26,232 +22,296 @@ public class JbossLoggerTest {
 
 
     @Test
-    public void isFatalEnabled(@Mocked final org.jboss.logging.Logger mockLogger) throws Exception {
-        new Expectations() {{
-            mockLogger.isEnabled(org.jboss.logging.Logger.Level.FATAL);
-            returns(false, true, true, false);
-        }};
+    public void isFatalEnabled() throws Exception {
+        final org.jboss.logging.Logger mockLogger = mock(org.jboss.logging.Logger.class);
 
-        final Logger sut = new JbossLoggingLoggerFactory().get("test");
-        assertThat(sut.isFatalEnabled(), is(false));
-        assertThat(sut.isFatalEnabled(), is(true));
-        assertThat(sut.isFatalEnabled(), is(true));
-        assertThat(sut.isFatalEnabled(), is(false));
+        try (final MockedStatic<org.jboss.logging.Logger> mocked = mockStatic(org.jboss.logging.Logger.class)) {
+            mocked.when(() -> org.jboss.logging.Logger.getLogger(anyString())).thenReturn(mockLogger);
+            
+            when(mockLogger.isEnabled(org.jboss.logging.Logger.Level.FATAL)).thenReturn(false, true, true, false);
+
+            final Logger sut = new JbossLoggingLoggerFactory().get("test");
+            assertThat(sut.isFatalEnabled(), is(false));
+            assertThat(sut.isFatalEnabled(), is(true));
+            assertThat(sut.isFatalEnabled(), is(true));
+            assertThat(sut.isFatalEnabled(), is(false));
+        }
     }
 
     @Test
-    public void logFatal_messageAndOptions(@Mocked final org.jboss.logging.Logger mockLogger) throws Exception {
-        final Logger sut = new JbossLoggingLoggerFactory().get("test");
-        sut.logFatal("message{0}:{1}", "a", "b");
+    public void logFatal_messageAndOptions() throws Exception {
+        final org.jboss.logging.Logger mockLogger = mock(org.jboss.logging.Logger.class);
 
-        new Verifications() {{
-            mockLogger.fatalv("message{0}:{1}", new Object[] {"a", "b"});
-        }};
+        try (final MockedStatic<org.jboss.logging.Logger> mocked = mockStatic(org.jboss.logging.Logger.class)) {
+            mocked.when(() -> org.jboss.logging.Logger.getLogger(anyString())).thenReturn(mockLogger);
+            
+            final Logger sut = new JbossLoggingLoggerFactory().get("test");
+            sut.logFatal("message{0}:{1}", "a", "b");
+
+            verify(mockLogger, atLeastOnce()).fatalv("message{0}:{1}", new Object[] {"a", "b"});
+        }
     }
 
     @Test
-    public void logFatal_messageAndThrowableAndOptions(@Mocked final org.jboss.logging.Logger mockLogger) throws
+    public void logFatal_messageAndThrowableAndOptions() throws
             Exception {
-        final IllegalArgumentException exception = new IllegalArgumentException("test");
-        final Logger sut = new JbossLoggingLoggerFactory().get("test");
-        sut.logFatal("エラーが発生しました！", exception, "a");
+        final org.jboss.logging.Logger mockLogger = mock(org.jboss.logging.Logger.class);
 
-        new Verifications() {{
-            mockLogger.fatalv(exception, "エラーが発生しました！", new Object[] {"a"});
-        }};
+        try (final MockedStatic<org.jboss.logging.Logger> mocked = mockStatic(org.jboss.logging.Logger.class)) {
+            mocked.when(() -> org.jboss.logging.Logger.getLogger(anyString())).thenReturn(mockLogger);
+            
+            final IllegalArgumentException exception = new IllegalArgumentException("test");
+            final Logger sut = new JbossLoggingLoggerFactory().get("test");
+            sut.logFatal("エラーが発生しました！", exception, "a");
+
+            verify(mockLogger, atLeastOnce()).fatalv(exception, "エラーが発生しました！", new Object[] {"a"});
+        }
     }
 
     @Test
-    public void isErrorEnabled(@Mocked final org.jboss.logging.Logger mockLogger) throws Exception {
-        new Expectations() {{
-            mockLogger.isEnabled(org.jboss.logging.Logger.Level.ERROR);
-            returns(true, false, true, false);
-        }};
+    public void isErrorEnabled() throws Exception {
+        final org.jboss.logging.Logger mockLogger = mock(org.jboss.logging.Logger.class);
 
-        final Logger sut = new JbossLoggingLoggerFactory().get("test");
-        assertThat(sut.isErrorEnabled(), is(true));
-        assertThat(sut.isErrorEnabled(), is(false));
-        assertThat(sut.isErrorEnabled(), is(true));
-        assertThat(sut.isErrorEnabled(), is(false));
+        try (final MockedStatic<org.jboss.logging.Logger> mocked = mockStatic(org.jboss.logging.Logger.class)) {
+            mocked.when(() -> org.jboss.logging.Logger.getLogger(anyString())).thenReturn(mockLogger);
+            when(mockLogger.isEnabled(org.jboss.logging.Logger.Level.ERROR)).thenReturn(true, false, true, false);
+            final Logger sut = new JbossLoggingLoggerFactory().get("test");
+            assertThat(sut.isErrorEnabled(), is(true));
+            assertThat(sut.isErrorEnabled(), is(false));
+            assertThat(sut.isErrorEnabled(), is(true));
+            assertThat(sut.isErrorEnabled(), is(false));
+        }
     }
 
     @Test
-    public void logError_messageAndOptions(@Mocked final org.jboss.logging.Logger mockLogger) throws Exception {
-        final Logger sut = new JbossLoggingLoggerFactory().get("test");
+    public void logError_messageAndOptions() throws Exception {
+        final org.jboss.logging.Logger mockLogger = mock(org.jboss.logging.Logger.class);
 
-        sut.logError("エラーメッセージ:{0}-{1}", "1", 100);
+        try (final MockedStatic<org.jboss.logging.Logger> mocked = mockStatic(org.jboss.logging.Logger.class)) {
+            mocked.when(() -> org.jboss.logging.Logger.getLogger(anyString())).thenReturn(mockLogger);
+            
+            final Logger sut = new JbossLoggingLoggerFactory().get("test");
 
-        new Verifications() {{
-            mockLogger.errorv("エラーメッセージ:{0}-{1}", new Object[] {"1", 100});
-        }};
+            sut.logError("エラーメッセージ:{0}-{1}", "1", 100);
+
+            verify(mockLogger, atLeastOnce()).errorv("エラーメッセージ:{0}-{1}", new Object[] {"1", 100});
+        }
     }
 
     @Test
-    public void logError_messageAndThrowableAndOptions(@Mocked final org.jboss.logging.Logger mockLogger) throws
+    public void logError_messageAndThrowableAndOptions() throws
             Exception {
-        final Logger sut = new JbossLoggingLoggerFactory().get("test");
+        final org.jboss.logging.Logger mockLogger = mock(org.jboss.logging.Logger.class);
 
-        final NullPointerException exception = new NullPointerException("null");
+        try (final MockedStatic<org.jboss.logging.Logger> mocked = mockStatic(org.jboss.logging.Logger.class)) {
+            mocked.when(() -> org.jboss.logging.Logger.getLogger(anyString())).thenReturn(mockLogger);
+            
+            final Logger sut = new JbossLoggingLoggerFactory().get("test");
 
-        sut.logError("エラーよ:{0}-{1}", exception, BigDecimal.ONE, BigDecimal.ZERO);
+            final NullPointerException exception = new NullPointerException("null");
 
-        new Verifications() {{
-            mockLogger.errorv(exception, "エラーよ:{0}-{1}",
+            sut.logError("エラーよ:{0}-{1}", exception, BigDecimal.ONE, BigDecimal.ZERO);
+
+            verify(mockLogger, atLeastOnce()).errorv(exception, "エラーよ:{0}-{1}",
                     new Object[] {BigDecimal.ONE, BigDecimal.ZERO});
-        }};
+        }
     }
 
     @Test
-    public void isWarnEnabled(@Mocked final org.jboss.logging.Logger mockLogger) throws Exception {
-        new Expectations() {{
-            mockLogger.isEnabled(org.jboss.logging.Logger.Level.WARN);
-            returns(true, false, false, true);
-        }};
+    public void isWarnEnabled() throws Exception {
+        final org.jboss.logging.Logger mockLogger = mock(org.jboss.logging.Logger.class);
 
-        final Logger sut = new JbossLoggingLoggerFactory().get("test");
-        assertThat(sut.isWarnEnabled(), is(true));
-        assertThat(sut.isWarnEnabled(), is(false));
-        assertThat(sut.isWarnEnabled(), is(false));
-        assertThat(sut.isWarnEnabled(), is(true));
+        try (final MockedStatic<org.jboss.logging.Logger> mocked = mockStatic(org.jboss.logging.Logger.class)) {
+            mocked.when(() -> org.jboss.logging.Logger.getLogger(anyString())).thenReturn(mockLogger);
+            
+            when(mockLogger.isEnabled(org.jboss.logging.Logger.Level.WARN)).thenReturn(true, false, false, true);
+
+            final Logger sut = new JbossLoggingLoggerFactory().get("test");
+            assertThat(sut.isWarnEnabled(), is(true));
+            assertThat(sut.isWarnEnabled(), is(false));
+            assertThat(sut.isWarnEnabled(), is(false));
+            assertThat(sut.isWarnEnabled(), is(true));
+        }
     }
 
     @Test
-    public void logWarn_messageAndOptions(@Mocked final org.jboss.logging.Logger mockLogger) throws Exception {
-        final Logger sut = new JbossLoggingLoggerFactory().get("test");
+    public void logWarn_messageAndOptions() throws Exception {
+        final org.jboss.logging.Logger mockLogger = mock(org.jboss.logging.Logger.class);
 
-        sut.logWarn("ワーニング-{0}, {1}, {2}", "a", 1, 100L);
+        try (final MockedStatic<org.jboss.logging.Logger> mocked = mockStatic(org.jboss.logging.Logger.class)) {
+            mocked.when(() -> org.jboss.logging.Logger.getLogger(anyString())).thenReturn(mockLogger);
 
-        new Verifications() {{
-            mockLogger.warnv("ワーニング-{0}, {1}, {2}", new Object[] {"a", 1, 100L});
-        }};
+            final Logger sut = new JbossLoggingLoggerFactory().get("test");
+
+            sut.logWarn("ワーニング-{0}, {1}, {2}", "a", 1, 100L);
+
+            verify(mockLogger, atLeastOnce()).warnv("ワーニング-{0}, {1}, {2}", new Object[] {"a", 1, 100L});
+        }
     }
 
     @Test
-    public void logWarn_messageAndThrowableAndOptions(@Mocked final org.jboss.logging.Logger mockLogger) throws
+    public void logWarn_messageAndThrowableAndOptions() throws
             Exception {
-        final Logger sut = new JbossLoggingLoggerFactory().get("test");
+        final org.jboss.logging.Logger mockLogger = mock(org.jboss.logging.Logger.class);
 
-        final NumberFormatException exception = new NumberFormatException("a");
+        try (final MockedStatic<org.jboss.logging.Logger> mocked = mockStatic(org.jboss.logging.Logger.class)) {
+            mocked.when(() -> org.jboss.logging.Logger.getLogger(anyString())).thenReturn(mockLogger);
+            
+            final Logger sut = new JbossLoggingLoggerFactory().get("test");
 
-        sut.logWarn("ワーニング-{0}, {1}", exception, "a", 1);
+            final NumberFormatException exception = new NumberFormatException("a");
 
-        new Verifications() {{
-            mockLogger.warnv(exception, "ワーニング-{0}, {1}", new Object[] {"a", 1});
-        }};
+            sut.logWarn("ワーニング-{0}, {1}", exception, "a", 1);
+
+            verify(mockLogger, atLeastOnce()).warnv(exception, "ワーニング-{0}, {1}", new Object[] {"a", 1});
+        }
     }
 
     @Test
-    public void isInfoEnabled(@Mocked final org.jboss.logging.Logger mockLogger) throws Exception {
-        new Expectations() {{
-            mockLogger.isEnabled(org.jboss.logging.Logger.Level.INFO);
-            returns(false, true, false, true);
-        }};
+    public void isInfoEnabled() throws Exception {
+        final org.jboss.logging.Logger mockLogger = mock(org.jboss.logging.Logger.class);
 
-        final Logger sut = new JbossLoggingLoggerFactory().get("test");
-        assertThat(sut.isInfoEnabled(), is(false));
-        assertThat(sut.isInfoEnabled(), is(true));
-        assertThat(sut.isInfoEnabled(), is(false));
-        assertThat(sut.isInfoEnabled(), is(true));
+        try (final MockedStatic<org.jboss.logging.Logger> mocked = mockStatic(org.jboss.logging.Logger.class)) {
+            mocked.when(() -> org.jboss.logging.Logger.getLogger(anyString())).thenReturn(mockLogger);
+
+            when(mockLogger.isEnabled(org.jboss.logging.Logger.Level.INFO)).thenReturn(false, true, false, true);
+
+            final Logger sut = new JbossLoggingLoggerFactory().get("test");
+            assertThat(sut.isInfoEnabled(), is(false));
+            assertThat(sut.isInfoEnabled(), is(true));
+            assertThat(sut.isInfoEnabled(), is(false));
+            assertThat(sut.isInfoEnabled(), is(true));
+        }
     }
 
     @Test
-    public void logInfo_messageAndOptions(@Mocked final org.jboss.logging.Logger mockLogger) throws Exception {
-        final Logger sut = new JbossLoggingLoggerFactory().get("test");
+    public void logInfo_messageAndOptions() throws Exception {
+        final org.jboss.logging.Logger mockLogger = mock(org.jboss.logging.Logger.class);
 
-        sut.logInfo("インフォメーション{0}, {1}", "hoge", "fuga");
+        try (final MockedStatic<org.jboss.logging.Logger> mocked = mockStatic(org.jboss.logging.Logger.class)) {
+            mocked.when(() -> org.jboss.logging.Logger.getLogger(anyString())).thenReturn(mockLogger);
 
-        new Verifications() {{
-            mockLogger.infov("インフォメーション{0}, {1}", new Object[] {"hoge", "fuga"});
-        }};
+            final Logger sut = new JbossLoggingLoggerFactory().get("test");
+
+            sut.logInfo("インフォメーション{0}, {1}", "hoge", "fuga");
+
+            verify(mockLogger, atLeastOnce()).infov("インフォメーション{0}, {1}", new Object[] {"hoge", "fuga"});
+        }
     }
 
     @Test
-    public void logInfo_messageAndThrowableAndOptions(@Mocked final org.jboss.logging.Logger mockLogger) throws
+    public void logInfo_messageAndThrowableAndOptions() throws
             Exception {
-        final Logger sut = new JbossLoggingLoggerFactory().get("test");
-        final OutOfMemoryError error = new OutOfMemoryError();
+        final org.jboss.logging.Logger mockLogger = mock(org.jboss.logging.Logger.class);
 
-        sut.logInfo("info{0}{1}", error, "aa", "bb");
+        try (final MockedStatic<org.jboss.logging.Logger> mocked = mockStatic(org.jboss.logging.Logger.class)) {
+            mocked.when(() -> org.jboss.logging.Logger.getLogger(anyString())).thenReturn(mockLogger);
 
-        new Verifications() {{
-            mockLogger.infov(error, "info{0}{1}", new Object[] {"aa", "bb"});
-        }};
+            final Logger sut = new JbossLoggingLoggerFactory().get("test");
+            final OutOfMemoryError error = new OutOfMemoryError();
+
+            sut.logInfo("info{0}{1}", error, "aa", "bb");
+
+            verify(mockLogger, atLeastOnce()).infov(error, "info{0}{1}", new Object[] {"aa", "bb"});
+        }
     }
 
     @Test
-    public void isDebugEnabled(@Mocked final org.jboss.logging.Logger mockLogger) throws Exception {
-        new Expectations() {{
-            mockLogger.isEnabled(org.jboss.logging.Logger.Level.DEBUG);
-            returns(true, true, false, true);
-        }};
+    public void isDebugEnabled() throws Exception {
+        final org.jboss.logging.Logger mockLogger = mock(org.jboss.logging.Logger.class);
 
-        final Logger sut = new JbossLoggingLoggerFactory().get("test");
-        assertThat(sut.isDebugEnabled(), is(true));
-        assertThat(sut.isDebugEnabled(), is(true));
-        assertThat(sut.isDebugEnabled(), is(false));
-        assertThat(sut.isDebugEnabled(), is(true));
+        try (final MockedStatic<org.jboss.logging.Logger> mocked = mockStatic(org.jboss.logging.Logger.class)) {
+            mocked.when(() -> org.jboss.logging.Logger.getLogger(anyString())).thenReturn(mockLogger);
+
+            when(mockLogger.isEnabled(org.jboss.logging.Logger.Level.DEBUG)).thenReturn(true, true, false, true);
+
+            final Logger sut = new JbossLoggingLoggerFactory().get("test");
+            assertThat(sut.isDebugEnabled(), is(true));
+            assertThat(sut.isDebugEnabled(), is(true));
+            assertThat(sut.isDebugEnabled(), is(false));
+            assertThat(sut.isDebugEnabled(), is(true));
+        }
     }
 
     @Test
-    public void logDebug_messageAndOptions(@Mocked final org.jboss.logging.Logger mockLogger) throws Exception {
-        final Logger sut = new JbossLoggingLoggerFactory().get("test");
+    public void logDebug_messageAndOptions() throws Exception {
+        final org.jboss.logging.Logger mockLogger = mock(org.jboss.logging.Logger.class);
 
-        sut.logDebug("デバッグ:{0}, {1}", "abc", "def");
+        try (final MockedStatic<org.jboss.logging.Logger> mocked = mockStatic(org.jboss.logging.Logger.class)) {
+            mocked.when(() -> org.jboss.logging.Logger.getLogger(anyString())).thenReturn(mockLogger);
+            
+            final Logger sut = new JbossLoggingLoggerFactory().get("test");
 
-        new Verifications() {{
-            mockLogger.debugv("デバッグ:{0}, {1}", new Object[] {"abc", "def"});
-        }};
+            sut.logDebug("デバッグ:{0}, {1}", "abc", "def");
+
+            verify(mockLogger, atLeastOnce()).debugv("デバッグ:{0}, {1}", new Object[] {"abc", "def"});
+        }
     }
 
     @Test
-    public void logDebug_messageAndThrowableAndOptions(@Mocked final org.jboss.logging.Logger mockLogger) throws
+    public void logDebug_messageAndThrowableAndOptions() throws
             Exception {
-        final Logger sut = new JbossLoggingLoggerFactory().get("test");
+        final org.jboss.logging.Logger mockLogger = mock(org.jboss.logging.Logger.class);
 
-        final NumberFormatException exception = new NumberFormatException("hoge");
+        try (final MockedStatic<org.jboss.logging.Logger> mocked = mockStatic(org.jboss.logging.Logger.class)) {
+            mocked.when(() -> org.jboss.logging.Logger.getLogger(anyString())).thenReturn(mockLogger);
 
-        sut.logDebug("debug:{0}", exception, exception.getMessage());
+            final Logger sut = new JbossLoggingLoggerFactory().get("test");
 
-        new Verifications() {{
-            mockLogger.debugv(exception, "debug:{0}", new Object[] {exception.getMessage()});
-        }};
+            final NumberFormatException exception = new NumberFormatException("hoge");
+
+            sut.logDebug("debug:{0}", exception, exception.getMessage());
+
+            verify(mockLogger, atLeastOnce()).debugv(exception, "debug:{0}", new Object[] {exception.getMessage()});
+        }
     }
 
     @Test
-    public void isTraceEnabled(@Mocked final org.jboss.logging.Logger mockLogger) throws Exception {
-        new Expectations() {{
-            mockLogger.isEnabled(org.jboss.logging.Logger.Level.TRACE);
-            returns(false, true, false, false);
-        }};
+    public void isTraceEnabled() throws Exception {
+        final org.jboss.logging.Logger mockLogger = mock(org.jboss.logging.Logger.class);
 
-        final Logger sut = new JbossLoggingLoggerFactory().get("test");
-        assertThat(sut.isTraceEnabled(), is(false));
-        assertThat(sut.isTraceEnabled(), is(true));
-        assertThat(sut.isTraceEnabled(), is(false));
-        assertThat(sut.isTraceEnabled(), is(false));
+        try (final MockedStatic<org.jboss.logging.Logger> mocked = mockStatic(org.jboss.logging.Logger.class)) {
+            mocked.when(() -> org.jboss.logging.Logger.getLogger(anyString())).thenReturn(mockLogger);
+
+            when(mockLogger.isEnabled(org.jboss.logging.Logger.Level.TRACE)).thenReturn(false, true, false, false);
+
+            final Logger sut = new JbossLoggingLoggerFactory().get("test");
+            assertThat(sut.isTraceEnabled(), is(false));
+            assertThat(sut.isTraceEnabled(), is(true));
+            assertThat(sut.isTraceEnabled(), is(false));
+            assertThat(sut.isTraceEnabled(), is(false));
+        }
     }
 
     @Test
-    public void logTrace_messageAndOptions(@Mocked final org.jboss.logging.Logger mockLogger) throws Exception {
-        final Logger sut = new JbossLoggingLoggerFactory().get("test");
-        sut.logTrace("trace-{0}", "aaaa");
+    public void logTrace_messageAndOptions() throws Exception {
+        final org.jboss.logging.Logger mockLogger = mock(org.jboss.logging.Logger.class);
 
-        new Verifications() {{
-            mockLogger.tracev("trace-{0}", new Object[] {"aaaa"});
-        }};
+        try (final MockedStatic<org.jboss.logging.Logger> mocked = mockStatic(org.jboss.logging.Logger.class)) {
+            mocked.when(() -> org.jboss.logging.Logger.getLogger(anyString())).thenReturn(mockLogger);
+
+            final Logger sut = new JbossLoggingLoggerFactory().get("test");
+            sut.logTrace("trace-{0}", "aaaa");
+
+            verify(mockLogger, atLeastOnce()).tracev("trace-{0}", new Object[] {"aaaa"});
+        }
     }
 
     @Test
-    public void logTrace_messageAndThrowableAndOptions(@Mocked final org.jboss.logging.Logger mockLogger) throws
+    public void logTrace_messageAndThrowableAndOptions() throws
             Exception {
-        final Logger sut = new JbossLoggingLoggerFactory().get("test");
+        final org.jboss.logging.Logger mockLogger = mock(org.jboss.logging.Logger.class);
 
-        final RuntimeException exception = new RuntimeException();
-        sut.logTrace("trace-{0}-{1}", exception, "aaaa", "bbbb");
+        try (final MockedStatic<org.jboss.logging.Logger> mocked = mockStatic(org.jboss.logging.Logger.class)) {
+            mocked.when(() -> org.jboss.logging.Logger.getLogger(anyString())).thenReturn(mockLogger);
 
-        new Verifications() {{
-            mockLogger.tracev(exception, "trace-{0}-{1}", new Object[] {"aaaa", "bbbb"});
-        }};
+            final Logger sut = new JbossLoggingLoggerFactory().get("test");
+
+            final RuntimeException exception = new RuntimeException();
+            sut.logTrace("trace-{0}-{1}", exception, "aaaa", "bbbb");
+
+            verify(mockLogger, atLeastOnce()).tracev(exception, "trace-{0}-{1}", new Object[] {"aaaa", "bbbb"});
+        }
     }
 
 
